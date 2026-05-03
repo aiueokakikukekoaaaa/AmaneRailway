@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+
+<style>
+body {
+  margin: 0;
+  background: #000;
+  font-family: "Meiryo UI", sans-serif;
+}
+
+.container { display:flex; height:80vh; }
+
+.box {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.left, .top, .middle, .logo, .device, .bottom div {
+  border:4px solid #000;
+  box-sizing:border-box;
+}
+
+.left { flex:3; background:#fff; }
+#dest { font-size:120px; font-weight:900; }
+
+/* 右 */
+.right { flex:2; display:flex; flex-direction:column; }
+.top { background:#000; color:#fff; font-size:34px; height:20%; }
+.device { background:#111; color:#0ff; font-size:26px; height:20%; }
+.middle { background:#fff; font-size:30px; height:30%; }
+.logo { background:#fff; font-size:54px; font-weight:900; height:30%; }
+
+/* 下 */
+.bottom { display:flex; height:20vh; }
+.bottom div { flex:1; background:#fff; font-size:22px; padding:10px; }
+
+/* メニュー */
+.menu {
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.7);
+}
+
+.menu-card {
+  width:92%;
+  height:75vh;
+  background:#000;
+  border-radius:18px;
+  display:flex;
+  flex-direction:column;
+}
+
+.menu-header { color:#fff; font-size:20px; padding:10px; }
+
+.menu-list {
+  flex:1;
+  overflow-y:auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+}
+
+.menu-item {
+  padding:12px;
+  font-size:20px;
+  color:#fff;
+  border-bottom:1px solid #222;
+}
+
+.menu-item.selected { background:#0044ff; }
+
+.confirm {
+  background:#0a0;
+  padding:14px;
+  text-align:center;
+  font-size:20px;
+}
+
+/* 入力 */
+.inputBox {
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:#000;
+  display:none;
+  flex-direction:column;
+  padding:10px;
+}
+
+.inputBox input, .inputBox button {
+  width:100%;
+  padding:12px;
+  font-size:20px;
+}
+
+.inputBox button {
+  margin-top:8px;
+  background:#0a0;
+  color:#fff;
+}
+
+/* 種別カラー */
+.type-各駅停車 { color:#00bfff; }
+.type-普通 { color:#000; }
+.type-区間快速 { color:#ffd700; }
+.type-通勤快速 { color:#ff9900; }
+.type-快速 { color:#ff9900; }
+.type-ホリデー快速 { color:#ff66cc; }
+.type-青梅特快 { color:#00aa00; }
+.type-中央特快 { color:#000; }
+.type-通勤特快 { color:#000; }
+.type-直通快速 { color:#ff9900; }
+.type-新快速 { color:#00bfff; }
+.type-通勤準急 { color:#000; }
+.type-準急 { color:#009688; }
+.type-区間急行 { color:#ff0000; }
+.type-通勤急行 { color:#ff9900; }
+.type-急行 { color:#ff6600; }
+.type-快速急行 { color:#0033cc; }
+.type-特急 { color:#ff0000; }
+.type-快速特急 { color:#ff66cc; }
+.type-エア快特 { color:#0099ff; }
+.type-回送 { color:#ff0000; }
+.type-試運転 { color:#ff0000; }
+.type-臨時 { color:#ff0000; }
+
+/* 会社カラー */
+.company-JR { color:#66cc33; }
+.company-私鉄 { color:#000; }
+.company-高速鉄道 { color:#00bfff; }
+.company-新幹線 { color:#0066ff; }
+.company-貨物 { color:#000; }
+
+.arrow { margin:0 10px; }
+</style>
+</head>
+
+<body onclick="beep()">
+
+<div class="container">
+
+  <div class="left box" onclick="openMenu('type')">
+    <div id="dest" class="type-各駅停車">各駅停車</div>
+  </div>
+
+  <div class="right">
+    <div class="top box" onclick="openMenu('cars')" id="cars">10両</div>
+    <div class="device box" onclick="openMenu('device')" id="device">D-ATC</div>
+
+    <div class="middle box">
+      <span id="start" onclick="openInput('start')">始発</span>
+      <span class="arrow">→</span>
+      <span id="end" onclick="openInput('end')">終点</span>
+    </div>
+
+    <div class="logo box company-JR" onclick="openMenu('company')" id="company">JR</div>
+  </div>
+</div>
+
+<div class="bottom">
+  <div onclick="openLineMode()" id="line">路線</div>
+  <div onclick="openInput('driver')" id="driver">運転士：</div>
+</div>
+
+<!-- メニュー -->
+<div class="menu" id="menu">
+  <div class="menu-card">
+    <div class="menu-header">選択</div>
+    <div class="menu-list" id="menuList"></div>
+    <div class="confirm" onclick="applySelection()">決定</div>
+  </div>
+</div>
+
+<!-- 入力 -->
+<div class="inputBox" id="inputBox">
+  <input id="textInput">
+  <button onclick="applyInput()">決定</button>
+</div>
+
+<script>
+const ctx=new(window.AudioContext||window.webkitAudioContext)();
+function beep(){
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.frequency.value=2200;
+  g.gain.value=0.1;
+  o.connect(g);g.connect(ctx.destination);
+  o.start();o.stop(ctx.currentTime+0.03);
+}
+
+let currentType="",selected="",inputType="";
+let lineA="",lineB="";
+
+const dest=document.getElementById("dest");
+const cars=document.getElementById("cars");
+const company=document.getElementById("company");
+const device=document.getElementById("device");
+const lineEl=document.getElementById("line");
+
+/* メニュー */
+function openMenu(type){
+  currentType=type;selected="";
+  menu.style.display="flex";
+  inputBox.style.display="none";
+  menuList.innerHTML="";
+
+  let options=[],currentVal="";
+
+  if(type==="type"){
+    options=[
+      "各駅停車","普通","区間快速","通勤快速","快速",
+      "ホリデー快速","青梅特快","中央特快","通勤特快",
+      "直通快速","新快速","通勤準急","準急",
+      "区間急行","通勤急行","急行","快速急行",
+      "特急","快速特急","エア快特",
+      "回送","試運転","臨時"
+    ];
+    currentVal=dest.innerText;
+  }
+
+  if(type==="company"){
+    options=["JR","私鉄","高速鉄道","新幹線","貨物"];
+    currentVal=company.innerText;
+  }
+
+  if(type==="cars"){
+    options=Array.from({length:15},(_,i)=>String(i+1));
+    currentVal=cars.innerText.replace("両","");
+  }
+
+  if(type==="device"){
+    options=["D-ATC","ATC","ATS-P","ATS","C-ATS","制御装置無効"];
+    currentVal=device.innerText;
+  }
+
+  options.forEach(opt=>{
+    const d=document.createElement("div");
+    d.className="menu-item";
+    d.innerText=opt;
+
+    if(opt===currentVal){
+      d.classList.add("selected");
+      selected=opt;
+    }
+
+    d.onclick=()=>{
+      document.querySelectorAll(".menu-item").forEach(e=>e.classList.remove("selected"));
+      d.classList.add("selected");
+      selected=opt;
+    };
+
+    menuList.appendChild(d);
+  });
+}
+
+function applySelection(){
+  if(!selected) return;
+
+  if(currentType==="type"){
+    dest.innerText=selected;
+    dest.className="type-"+selected;
+  }
+  if(currentType==="company"){
+    company.innerText=selected;
+    company.className="logo box company-"+selected;
+  }
+  if(currentType==="cars"){ cars.innerText=selected+"両"; }
+  if(currentType==="device"){ device.innerText=selected; }
+
+  menu.style.display="none";
+}
+
+/* 路線 */
+function openLineMode(){
+  menu.style.display="flex";
+  menuList.innerHTML="";
+
+  ["通常","直通"].forEach(opt=>{
+    const d=document.createElement("div");
+    d.className="menu-item";
+    d.innerText=opt;
+
+    d.onclick=()=>{
+      if(opt==="通常"){ openInput("line"); }
+      else{ openInput("lineA"); }
+    };
+
+    menuList.appendChild(d);
+  });
+}
+
+function openInput(type){
+  inputType=type;
+  inputBox.style.display="flex";
+  menu.style.display="none";
+  textInput.value="";
+}
+
+function applyInput(){
+  const v=textInput.value.trim();
+  if(!v) return;
+
+  if(inputType==="line"){ lineEl.innerText=v; }
+  if(inputType==="lineA"){ lineA=v; openInput("lineB"); return; }
+  if(inputType==="lineB"){ lineB=v; lineEl.innerText=lineA+"　経由　"+lineB; }
+
+  if(inputType==="driver"){ driver.innerText="運転士："+v; }
+  if(inputType==="start"){ start.innerText=v; }
+  if(inputType==="end"){ end.innerText=v; }
+
+  inputBox.style.display="none";
+}
+</script>
+
+</body>
+</html>
